@@ -1,13 +1,12 @@
 import streamlit as st
 import PyPDF2
 import openai
-import os
 
-# Read the API key from the environment
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-if not openai.api_key:
-    st.error("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+# Read the API key from Streamlit secrets
+if "OPENAI_API_KEY" in st.secrets:
+    openai.api_key = st.secrets["OPENAI_API_KEY"]
+else:
+    st.error("OpenAI API key not found. Please set the OPENAI_API_KEY in Streamlit secrets.")
     st.stop()
 
 # Function to extract text from PDF
@@ -20,15 +19,19 @@ def extract_text_from_pdf(uploaded_file):
 
 # Function to call OpenAI API for summarization
 def summarize_text(text):
-    response = openai.ChatCompletion.create(
-        model="gpt-4",  # Use "gpt-3.5-turbo" if GPT-4 is not available
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant that summarizes text."},
-            {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
-        ],
-        max_tokens=150  # Adjust as needed
-    )
-    return response['choices'][0]['message']['content']
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Use "gpt-4" if available
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that summarizes text."},
+                {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
+            ],
+            max_tokens=150  # Adjust as needed
+        )
+        return response['choices'][0]['message']['content']
+    except Exception as e:
+        st.error(f"An error occurred while summarizing: {e}")
+        return None
 
 # Streamlit app
 def main():
@@ -47,8 +50,9 @@ def main():
         if st.button("Summarize"):
             with st.spinner("Summarizing..."):
                 summary = summarize_text(text)
-                st.write("### Summary")
-                st.write(summary)
+                if summary:
+                    st.write("### Summary")
+                    st.write(summary)
 
 if __name__ == "__main__":
     main()
