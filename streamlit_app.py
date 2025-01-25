@@ -1,10 +1,14 @@
 import streamlit as st
 import PyPDF2
 import openai
-import io
+import os
 
-# Set your OpenAI API key
-openai.api_key = "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"
+# Read the API key from the environment
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+if not openai.api_key:
+    st.error("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+    st.stop()
 
 # Function to extract text from PDF
 def extract_text_from_pdf(uploaded_file):
